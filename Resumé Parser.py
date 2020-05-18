@@ -12,47 +12,39 @@ from pprint import pprint
 
 
 ######################################### Pdfminer #########################################
+## convert pdf to text using Pdfminer
 resume=''
 pdf=r".\src\resume.pdf"
 def extract_text_from_pdf(pdf_path):
     with open(pdf_path, 'rb') as fh:
-        # iterate over all pages of PDF document
         for page in PDFPage.get_pages(fh, caching=True, check_extractable=True):
-            # creating a resoure manager
             resource_manager = PDFResourceManager()
-            # create a file handle
             fake_file_handle = io.StringIO()
-            # creating a text converter object
             converter = TextConverter(
                                 resource_manager,
                                 fake_file_handle,
                                 codec='utf-8',
                                 laparams=LAParams()
                         )
-            # creating a page interpreter
             page_interpreter = PDFPageInterpreter(
                                 resource_manager,
                                 converter
                             )
-            # process current page
             page_interpreter.process_page(page)
-            # extract text
             text = fake_file_handle.getvalue()
             yield text
-            # close open handles
             converter.close()
             fake_file_handle.close()
 
 for page in extract_text_from_pdf(pdf):
     resume += ' ' + page
 ######################################### SpaCy ############################################
+## Parsing through the text resume using spaCy NLP features
 nlp = spacy.load('en_core_web_sm')
 
 def name(resume):
     matcher = Matcher(nlp.vocab)
     doc = nlp(resume)
-    # First name and Last name are always Proper Nouns
-    # pattern = [{'POS': 'PROPN'}, {'POS': 'PROPN'}] #To be used with span.text
     pattern = [{'POS': 'PROPN',"IS_ALPHA":True},{'POS': 'PROPN',"IS_ALPHA":True}]
     matcher.add('NAME', None, pattern)
     matches = matcher(doc)
@@ -96,7 +88,7 @@ def languages(resume):
     data = pd.read_csv(r".\src\Languages.csv", names=["a","b","c","language","d"])
     languages = data.language.tolist()
     languages=[language.strip() for language in languages]
-    ## Using Tockenization
+
     doc=nlp(resume)
     matches=[]
     for token in doc:
